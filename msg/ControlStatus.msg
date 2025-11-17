@@ -1,5 +1,10 @@
-kalman_interfaces/Motors current_control
-kalman_interfaces/Motors current_speed
-kalman_interfaces/Motors current_speed_filtered
-kalman_interfaces/Motors current_error
-kalman_interfaces/Motors setpoint
+float32 r_current_control
+float32 r_current_speed
+float32 r_current_speed_filtered
+float32 r_current_error
+float32 r_setpoint
+float32 l_current_control
+float32 l_current_speed
+float32 l_current_speed_filtered
+float32 l_current_error
+float32 l_setpoint
