@@ -13,5 +13,6 @@ bool[<=15] bumper
 bool[<=15] cliff
 uint16[<=15] touch
 bool scan_start_hint
+ControlStatus status
 uint8[<=511] lds
-#ControlStatus status
+
