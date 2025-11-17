@@ -14,3 +14,4 @@ bool[<=15] cliff
 uint16[<=15] touch
 bool scan_start_hint
 uint8[<=511] lds
+ControlStatus status
