@@ -22,6 +22,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/KaiaaiTelemetry2.msg"
   "msg/OnlineEvent.msg"
   "msg/ImuData.msg"
+  "msg/Led.msg"
   DEPENDENCIES builtin_interfaces diagnostic_msgs
  )
 ament_export_dependencies(rosidl_default_runtime)
