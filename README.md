@@ -1,5 +1,5 @@
 # kalman_interfaces
-Paquete de mensajes personalizados de ROS2 para la plataforma de software Kaia.ai. Este paquete define las interfaces de comunicación utilizadas por los robots basados en Kaia.ai.
+Paquete de mensajes personalizados de ROS2 para la plataforma de software Kalman. Este paquete define las interfaces de comunicación utilizadas por el Kit Kalman de robótica.
 
 - [kalman\_interfaces](#kalman_interfaces)
   - [Mensajes Definidos](#mensajes-definidos)
