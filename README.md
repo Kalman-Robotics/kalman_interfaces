@@ -7,6 +7,7 @@ Paquete de mensajes personalizados de ROS2 para la plataforma de software Kalman
       - [`ImuData.msg`](#imudatamsg)
     - [Actuadores](#actuadores)
       - [`Led.msg`](#ledmsg)
+      - [`Buzzer.msg`](#buzzermsg)
     - [Conectividad y Eventos](#conectividad-y-eventos)
       - [`WifiState.msg`](#wifistatemsg)
       - [`OnlineEvent.msg`](#onlineeventmsg)
@@ -20,7 +21,6 @@ Paquete de mensajes personalizados de ROS2 para la plataforma de software Kalman
       - [`ConfigParams.msg`](#configparamsmsg)
   - [Compilación](#compilación)
   - [Uso](#uso)
-
 
 ## Mensajes Definidos
 
@@ -38,6 +38,11 @@ Control de LED RGB:
 - `state`: Estado ON/OFF
 - `r`, `g`, `b`: Canales de color (0-255)
 - `intensity`: Intensidad/brillo (0-255)
+
+#### [`Buzzer.msg`](msg/Buzzer.msg)
+Control de buzzer/zumbador:
+- `state`: Estado ON/OFF (true = encendido, false = apagado)
+- `frequency`: Frecuencia del tono en Hertz (uint16)
 
 ### Conectividad y Eventos
 
