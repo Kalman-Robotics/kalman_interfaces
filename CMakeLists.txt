@@ -24,6 +24,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/ImuData.msg"
   "msg/Led.msg"
   "msg/Buzzer.msg"
+  "msg/NexusTelemetry.msg"
   DEPENDENCIES builtin_interfaces diagnostic_msgs
  )
 ament_export_dependencies(rosidl_default_runtime)
