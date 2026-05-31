@@ -1,10 +1,8 @@
 float32 r_current_control
 float32 r_current_speed
-float32 r_current_speed_filtered
 float32 r_current_error
 float32 r_setpoint
 float32 l_current_control
 float32 l_current_speed
-float32 l_current_speed_filtered
 float32 l_current_error
 float32 l_setpoint
