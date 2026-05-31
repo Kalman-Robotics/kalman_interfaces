@@ -1,0 +1,13 @@
+builtin_interfaces/Time stamp
+uint32 seq
+float32 odom_pos_x
+float32 odom_pos_y
+float32 odom_pos_yaw
+float32 odom_vel_x
+float32 odom_vel_yaw
+int8 wifi_rssi_dbm
+uint16 dist_front_mm
+uint16 dist_left_mm
+uint16 dist_back_mm
+uint16 dist_right_mm
+uint8[<=511] lds
