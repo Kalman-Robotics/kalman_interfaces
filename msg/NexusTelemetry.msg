@@ -5,6 +5,7 @@ float32 odom_pos_y
 float32 odom_pos_yaw
 float32 odom_vel_x
 float32 odom_vel_yaw
+JointPosVel[<=15] joint
 int8 wifi_rssi_dbm
 uint16 dist_front_mm
 uint16 dist_left_mm
