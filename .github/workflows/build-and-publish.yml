@@ -6,24 +6,35 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-publish:
-    runs-on: ubuntu-22.04
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - ros_distro: humble
+            ubuntu_codename: jammy
+            runner: ubuntu-22.04
+          - ros_distro: jazzy
+            ubuntu_codename: noble
+            runner: ubuntu-24.04
+
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install ROS Humble
+      - name: Install ROS ${{ matrix.ros_distro }}
         run: |
           sudo apt-get update
           sudo apt-get install -y curl gnupg lsb-release
           sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
             -o /usr/share/keyrings/ros-archive-keyring.gpg
           echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
-            http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" \
+            http://packages.ros.org/ros2/ubuntu ${{ matrix.ubuntu_codename }} main" \
             | sudo tee /etc/apt/sources.list.d/ros2.list
           sudo apt-get update
-          sudo apt-get install -y ros-humble-ros-base python3-colcon-common-extensions
+          sudo apt-get install -y ros-${{ matrix.ros_distro }}-ros-base python3-colcon-common-extensions
 
       - name: Install bloom and build tools
         run: |
@@ -33,11 +44,44 @@ jobs:
 
       - name: Build .deb with bloom
         run: |
-          source /opt/ros/humble/setup.bash
-          rosdep install --from-paths . --ignore-src -r -y
-          bloom-generate rosdebian --os-name ubuntu --os-version jammy --ros-distro humble
+          source /opt/ros/${{ matrix.ros_distro }}/setup.bash
+          rosdep install --from-paths . --ignore-src -r -y \
+            --rosdistro ${{ matrix.ros_distro }}
+          bloom-generate rosdebian \
+            --os-name ubuntu \
+            --os-version ${{ matrix.ubuntu_codename }} \
+            --ros-distro ${{ matrix.ros_distro }}
           fakeroot debian/rules binary
           ls -la ../*.deb
+
+      - name: Collect .deb
+        run: |
+          mkdir -p debs
+          cp ../*.deb debs/
+
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.ubuntu_codename }}
+          path: debs/*.deb
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Install repo tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev apt-utils gnupg
+
+      - name: Download all .deb artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: deb-*
 
       - name: Import GPG key
         run: |
@@ -52,50 +96,61 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Build apt repository and upload to S3
+      - name: Build multi-suite apt repository
         run: |
-          mkdir -p apt-repo/pool/main
-          mkdir -p apt-repo/dists/jammy/main/binary-amd64
+          set -euo pipefail
 
-          # Copiar .deb al pool
-          cp ../*.deb apt-repo/pool/main/
+          # Un pool y un dists/<codename>/ por cada artifact descargado.
+          # El artifact se llama deb-<codename>, de ahi sale la suite.
+          for artifact_dir in artifacts/deb-*; do
+            codename="${artifact_dir#artifacts/deb-}"
+            echo "::group::Building suite ${codename}"
 
-          # Generar Packages
-          cd apt-repo
-          dpkg-scanpackages pool/main /dev/null > dists/jammy/main/binary-amd64/Packages
-          gzip -k dists/jammy/main/binary-amd64/Packages
+            pool="apt-repo/pool/${codename}/main"
+            binary="apt-repo/dists/${codename}/main/binary-amd64"
+            mkdir -p "${pool}" "${binary}"
+            cp "${artifact_dir}"/*.deb "${pool}/"
 
-          # Generar Release
-          cd dists/jammy
-          cat > Release <<EOF
+            # dpkg-scanpackages necesita rutas relativas a la raiz del repo
+            ( cd apt-repo && \
+              dpkg-scanpackages "pool/${codename}/main" /dev/null \
+                > "dists/${codename}/main/binary-amd64/Packages" )
+            gzip -kf "${binary}/Packages"
+
+            ( cd "apt-repo/dists/${codename}"
+              cat > Release <<EOF
           Origin: Kalman Robotics
           Label: Kalman Robotics
-          Suite: jammy
-          Codename: jammy
+          Suite: ${codename}
+          Codename: ${codename}
           Architectures: amd64
           Components: main
           Description: Kalman Robotics ROS packages
           EOF
-          apt-ftparchive release . >> Release
+              apt-ftparchive release . >> Release
 
-          # Firmar Release con GPG
-          gpg --batch --yes --default-key "${GPG_KEY_ID}" \
-            --armor --detach-sign \
-            -o InRelease --clearsign Release
-          gpg --batch --yes --default-key "${GPG_KEY_ID}" \
-            --armor --detach-sign \
-            -o Release.gpg Release
+              gpg --batch --yes --default-key "${GPG_KEY_ID}" \
+                --armor --clearsign -o InRelease Release
+              gpg --batch --yes --default-key "${GPG_KEY_ID}" \
+                --armor --detach-sign -o Release.gpg Release
+            )
+            echo "::endgroup::"
+          done
 
-          cd ../../..
+          find apt-repo -type f | sort
 
-          # Subir todo a S3
+      - name: Upload apt repository to S3
+        run: |
           aws s3 sync apt-repo/ s3://${{ secrets.AWS_S3_BUCKET }}/packages/ \
             --region ${{ secrets.AWS_REGION }} \
-            --delete
+            --delete \
+            --exclude "kalman.gpg" \
+            --exclude "install-kalman-interfaces.sh"
 
-          # Subir clave GPG pública
+      - name: Upload public GPG key and installer
+        run: |
           gpg --armor --export "${GPG_KEY_ID}" | \
             aws s3 cp - s3://${{ secrets.AWS_S3_BUCKET }}/packages/kalman.gpg \
-            --region ${{ secrets.AWS_REGION }}
+              --region ${{ secrets.AWS_REGION }}
 
           echo "✅ Paquete publicado en s3://${{ secrets.AWS_S3_BUCKET }}/packages/"

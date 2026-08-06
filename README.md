@@ -19,6 +19,7 @@ Paquete de mensajes personalizados de ROS2 para la plataforma de software Kalman
       - [`Motors.msg`](#motorsmsg)
       - [`ControlStatus.msg`](#controlstatusmsg)
       - [`ConfigParams.msg`](#configparamsmsg)
+  - [Instalación](#instalación)
   - [Compilación](#compilación)
   - [Uso](#uso)
 
@@ -102,13 +103,43 @@ Parámetros de configuración del controlador:
 - `kd`: Ganancia derivativa
 - `alpha`: Parámetro de filtrado
 
+## Instalación
+
+Desde el repositorio apt de Kalman Robotics:
+
+```bash
+curl -fsSL https://kalmanrobotics.io/install-kalman-interfaces.sh | sudo bash
+```
+
+El instalador detecta la versión de Ubuntu y elige el ROS distro correspondiente:
+
+| Ubuntu | Codename | ROS 2 | Paquete |
+|---|---|---|---|
+| 22.04 | `jammy` | Humble | `ros-humble-kalman-interfaces` |
+| 24.04 | `noble` | Jazzy | `ros-jazzy-kalman-interfaces` |
+
+Si necesitas forzar un distro concreto:
+
+```bash
+curl -fsSL https://kalmanrobotics.io/install-kalman-interfaces.sh | sudo ROS_DISTRO=jazzy bash
+```
+
+El script se versiona en [scripts/install-kalman-interfaces.sh](scripts/install-kalman-interfaces.sh).
+
 ## Compilación
+
+Para compilar desde fuente en tu workspace:
 
 ```bash
 cd ~/ros2_ws
 colcon build --packages-select kalman_interfaces
 source install/setup.bash
 ```
+
+Los `.deb` de cada distro se generan automáticamente en cada push a `main`
+([build-and-publish.yml](.github/workflows/build-and-publish.yml)). Los mensajes
+son idénticos entre distros: añadir soporte para uno nuevo es una entrada más en
+el `matrix` del workflow y una línea en el `case` del instalador.
 
 ## Uso
 
